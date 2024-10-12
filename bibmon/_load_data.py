@@ -3,7 +3,7 @@ import pandas as pd
 import importlib.resources as pkg_resources
 
 from ._bibmon_tools import create_df_with_dates
-from . import real_process_data, tennessee_eastman 
+from . import real_process_data, tennessee_eastman, real_3w_data
 
 ###############################################################################
 
@@ -88,3 +88,39 @@ def load_real_data ():
 
     with pkg_resources.path(real_process_data,'real_process_data.csv') as file:
         return pd.read_csv(file,index_col = 0, parse_dates = True)
+
+###############################################################################
+
+def load_3W_data (event):
+    EVENT = event
+
+    PATH = os.path.join('..', '..', '..', '3W', 'dataset', str(EVENT))
+
+    # Inicializar a lista de arquivos
+    files = []
+
+    if os.path.exists(PATH):
+        files = [f for f in os.listdir(PATH) if os.path.isfile(os.path.join(PATH, f))]
+    else:
+        print(f"O caminho {PATH} não existe.")
+
+    dfs = {}
+
+    if files:  # Verifica se a lista de arquivos não está vazia
+        for file in files:
+            file_path = os.path.join(PATH, file)
+            try:
+                if file.endswith('.csv'):
+                    # Tentar ler o arquivo CSV com a codificação padrão
+                    dfs[file[:-4]] = pd.read_csv(file_path, index_col=0, parse_dates=True).rename_axis(None)
+                elif file.endswith('.parquet'):
+                    # Ler o arquivo Parquet
+                    dfs[file[:-8]] = pd.read_parquet(file_path)  # Remover o sufixo '.parquet'
+                else:
+                    print(f"Formato de arquivo desconhecido para {file}.")
+            except Exception as e:
+                print(f"Erro ao ler {file}: {e}")
+
+        print('Data read!\nNumber of instances: ', len(dfs))
+    else:
+        print("Nenhum arquivo encontrado.")
